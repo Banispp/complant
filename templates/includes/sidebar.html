@@ -1,0 +1,110 @@
+<aside class="app-sidebar">
+  <div class="d-flex align-items-center justify-content-between brand">
+    <a href="{% url 'dashboard' %}" class="d-flex align-items-center gap-2 text-decoration-none text-white">
+      <i class="bi bi-shield-check"></i>
+      <span>CMS Portal</span>
+    </a>
+    <button type="button" class="btn btn-sm btn-link text-white d-lg-none p-0" id="sidebarCloseBtn" aria-label="Close sidebar">
+      <i class="bi bi-x-lg fs-5"></i>
+    </button>
+  </div>
+
+  <div class="d-flex flex-column flex-grow-1 overflow-auto py-2">
+    {% if request.user.is_superuser or request.user.is_staff or request.user.profile.can_manage_complaints %}
+      <div class="nav-group-title">
+        {% if request.user.profile.role == 'CLASS_MENTOR' or request.user.profile.role == 'MENTOR' %}
+          Class Mentor Workspace
+        {% elif request.user.profile.role == 'HOD' %}
+          HOD Department Portal
+        {% elif request.user.profile.role == 'PRINCIPAL' %}
+          Principal Executive Portal
+        {% else %}
+          Administration
+        {% endif %}
+      </div>
+      <a href="{% url 'admin_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="{% url 'complaint_list' %}" class="nav-link {% if request.resolver_match.url_name == 'complaint_list' or request.resolver_match.url_name == 'complaint_detail' %}active{% endif %}">
+        <i class="bi bi-card-checklist"></i>
+        <span>
+          {% if request.user.profile.role == 'CLASS_MENTOR' or request.user.profile.role == 'MENTOR' %}
+            Class Complaints
+          {% elif request.user.profile.role == 'HOD' %}
+            Department Complaints
+          {% elif request.user.profile.role == 'PRINCIPAL' %}
+            All Escalations
+          {% else %}
+            All Complaints
+          {% endif %}
+        </span>
+      </a>
+      {% if request.user.is_superuser or request.user.is_staff or request.user.profile.role in 'ADMIN,PRINCIPAL' %}
+        {% if request.user.profile.role != 'PRINCIPAL' or request.user.is_superuser %}
+          <a href="{% url 'category_list' %}" class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-tags"></i>
+            <span>Categories</span>
+          </a>
+          <a href="{% url 'user_list' %}" class="nav-link {% if 'user_' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-people"></i>
+            <span>Users &amp; Roles</span>
+          </a>
+        {% endif %}
+        <a href="{% url 'reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Reports &amp; Analytics</span>
+        </a>
+        {% if request.user.is_superuser or request.user.is_staff %}
+          <a href="/admin/" target="_blank" class="nav-link">
+            <i class="bi bi-gear-fill"></i>
+            <span>Django Admin</span>
+          </a>
+        {% endif %}
+      {% endif %}
+    {% else %}
+      <div class="nav-group-title">Student Portal</div>
+      <a href="{% url 'user_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}">
+        <i class="bi bi-grid-1x2"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="{% url 'complaint_list' %}" class="nav-link {% if request.resolver_match.url_name == 'complaint_list' or request.resolver_match.url_name == 'complaint_detail' %}active{% endif %}">
+        <i class="bi bi-journal-text"></i>
+        <span>My Complaints</span>
+      </a>
+      <a href="{% url 'complaint_create' %}" class="nav-link {% if request.resolver_match.url_name == 'complaint_create' %}active{% endif %}">
+        <i class="bi bi-plus-circle"></i>
+        <span>Submit Complaint</span>
+      </a>
+    {% endif %}
+
+    <div class="nav-group-title">Account</div>
+    <a href="{% url 'profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' or request.resolver_match.url_name == 'change_password' %}active{% endif %}">
+      <i class="bi bi-person-gear"></i>
+      <span>Profile &amp; Security</span>
+    </a>
+    <a href="{% url 'logout' %}" class="nav-link text-danger">
+      <i class="bi bi-box-arrow-right"></i>
+      <span>Log Out</span>
+    </a>
+  </div>
+
+  <div class="user-info d-flex align-items-center gap-3">
+    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fw-bold" style="width: 38px; height: 38px; flex-shrink: 0;">
+      {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}
+    </div>
+    <div class="overflow-hidden">
+      <div class="text-white fw-semibold text-truncate small">{{ request.user.get_full_name|default:request.user.username }}</div>
+      <div class="text-muted small mt-1">
+        {% if request.user.profile %}
+          <span class="badge {{ request.user.profile.get_role_badge_class }}" style="font-size: 0.65rem;">
+            {{ request.user.profile.get_role_display|upper }}
+          </span>
+        {% else %}
+          <span class="badge bg-secondary" style="font-size: 0.65rem;">USER</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</aside>
+<div class="sidebar-backdrop"></div>

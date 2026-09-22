@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}User Dashboard - Complaint Management System{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">Welcome, {{ request.user.first_name|default:request.user.username }}!</h3>
+    <p class="text-muted mb-0">Track and manage your submitted support tickets and complaints.</p>
+  </div>
+  <div>
+    <a href="{% url 'complaint_create' %}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+      <i class="bi bi-plus-circle"></i>
+      <span>Submit New Complaint</span>
+    </a>
+  </div>
+</div>
+
+<!-- Stat Cards Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small fw-semibold text-uppercase">My Complaints</div>
+          <div class="fs-3 fw-bold mt-1">{{ total_count }}</div>
+        </div>
+        <div class="stat-icon-box bg-primary-subtle text-primary">
+          <i class="bi bi-folder2-open"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small fw-semibold text-uppercase">Pending Review</div>
+          <div class="fs-3 fw-bold mt-1 text-warning">{{ pending_count }}</div>
+        </div>
+        <div class="stat-icon-box bg-warning-subtle text-warning">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small fw-semibold text-uppercase">In Progress</div>
+          <div class="fs-3 fw-bold mt-1 text-info">{{ in_progress_count }}</div>
+        </div>
+        <div class="stat-icon-box bg-info-subtle text-info">
+          <i class="bi bi-gear-wide-connected"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card p-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small fw-semibold text-uppercase">Resolved</div>
+          <div class="fs-3 fw-bold mt-1 text-success">{{ resolved_count }}</div>
+        </div>
+        <div class="stat-icon-box bg-success-subtle text-success">
+          <i class="bi bi-check-circle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Complaints Section -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0 fw-semibold">Recent Complaints</h5>
+    <a href="{% url 'complaint_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+  </div>
+  <div class="card-body p-0">
+    {% if recent_complaints %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Complaint ID</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Escalation Tier</th>
+              <th>Status</th>
+              <th>Created Date</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in recent_complaints %}
+              <tr>
+                <td class="fw-bold"><a href="{% url 'complaint_detail' c.complaint_id %}" class="text-decoration-none">{{ c.complaint_id }}</a></td>
+                <td class="text-truncate" style="max-width: 260px;">{{ c.title }}</td>
+                <td><span class="badge bg-light text-dark border">{{ c.category.name }}</span></td>
+                <td>
+                  <span class="badge bg-dark text-warning">{{ c.get_current_level_display }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-status badge-{{ c.status|lower }}">{{ c.get_status_display }}</span>
+                </td>
+                <td class="text-muted small">{{ c.created_at|date:"d M Y, H:i" }}</td>
+                <td class="text-end">
+                  <a href="{% url 'complaint_detail' c.complaint_id %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-eye"></i> View
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <div class="display-6 text-muted mb-3"><i class="bi bi-inbox"></i></div>
+        <h5 class="fw-semibold">No Complaints Found</h5>
+        <p class="text-muted small mb-3">You haven't submitted any complaints or service requests yet.</p>
+        <a href="{% url 'complaint_create' %}" class="btn btn-primary btn-sm">
+          <i class="bi bi-plus-lg me-1"></i> Submit Your First Complaint
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

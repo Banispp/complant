@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Complaints List - Complaint Management System{% endblock %}
+{% block page_title %}{% if is_admin %}All Complaints{% else %}My Complaints{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">{% if is_admin %}Complaint Directory{% else %}My Submitted Complaints{% endif %}</h3>
+    <p class="text-muted mb-0">Browse, filter, and track status updates across all tickets.</p>
+  </div>
+  {% if not is_admin %}
+    <div>
+      <a href="{% url 'complaint_create' %}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+        <i class="bi bi-plus-circle"></i>
+        <span>Submit Complaint</span>
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Search & Filter Card -->
+<div class="card mb-4">
+  <div class="card-body p-3">
+    <form method="GET" action="{% url 'complaint_list' %}" class="row g-2 align-items-center">
+      <!-- Search Box -->
+      <div class="col-12 col-md-4">
+        <div class="input-group">
+          <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="{% if is_admin %}Search ID, title, user name...{% else %}Search ID or title...{% endif %}" value="{{ search_query }}">
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="col-6 col-md-2">
+        <select name="status" class="form-select">
+          <option value="">All Statuses</option>
+          {% for code, name in status_choices %}
+            <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Category Filter -->
+      <div class="col-6 col-md-2">
+        <select name="category" class="form-select">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Escalation Tier Filter -->
+      <div class="col-6 col-md-3">
+        <select name="level" class="form-select">
+          <option value="">All Escalation Tiers</option>
+          {% for code, name in level_choices %}
+            <option value="{{ code }}" {% if level_filter == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if is_admin %}
+        <!-- Assigned Staff Filter -->
+        <div class="col-6 col-md-3">
+          <select name="assigned_to" class="form-select">
+            <option value="">All Assignees</option>
+            <option value="unassigned" {% if assigned_filter == 'unassigned' %}selected{% endif %}>Unassigned</option>
+            {% for adm in admins %}
+              <option value="{{ adm.id }}" {% if assigned_filter == adm.id|stringformat:"s" %}selected{% endif %}>{{ adm.get_full_name|default:adm.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+
+      <!-- Date Filters -->
+      <div class="col-6 col-md-3">
+        <input type="date" name="date_from" class="form-control" title="From Date" placeholder="From Date" value="{{ date_from }}">
+      </div>
+      <div class="col-6 col-md-3">
+        <input type="date" name="date_to" class="form-control" title="To Date" placeholder="To Date" value="{{ date_to }}">
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+        <a href="{% url 'complaint_list' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+        <button type="submit" class="btn btn-primary btn-sm px-4">Apply Filters</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Complaints Table -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="text-secondary small fw-semibold">
+      Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ page_obj.paginator.count }} complaints
+    </span>
+  </div>
+  <div class="card-body p-0">
+    {% if page_obj.object_list %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Complaint ID</th>
+              <th>Title</th>
+              {% if is_admin %}<th>Submitted By</th>{% endif %}
+              <th>Category</th>
+              <th>Escalation Tier</th>
+              <th>Status</th>
+              {% if is_admin %}<th>Assigned To</th>{% endif %}
+              <th>Submitted Date</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in page_obj.object_list %}
+              <tr>
+                <td>
+                  <a href="{% url 'complaint_detail' c.complaint_id %}" class="fw-bold text-decoration-none">
+                    {{ c.complaint_id }}
+                  </a>
+                </td>
+                <td class="text-truncate" style="max-width: 250px;">{{ c.title }}</td>
+                {% if is_admin %}
+                  <td>
+                    <div class="fw-medium small">{{ c.user.get_full_name|default:c.user.username }}</div>
+                  </td>
+                {% endif %}
+                <td><span class="badge bg-light text-dark border">{{ c.category.name }}</span></td>
+                <td>
+                  <span class="badge bg-dark text-warning" style="font-size: 0.75rem;">{{ c.get_current_level_display }}</span>
+                </td>
+                <td><span class="badge badge-status badge-{{ c.status|lower }}">{{ c.get_status_display }}</span></td>
+                {% if is_admin %}
+                  <td class="small">
+                    {% if c.assigned_to %}
+                      {{ c.assigned_to.get_full_name|default:c.assigned_to.username }}
+                    {% else %}
+                      <span class="text-muted">Unassigned</span>
+                    {% endif %}
+                  </td>
+                {% endif %}
+                <td class="small text-muted">{{ c.created_at|date:"d M Y, H:i" }}</td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end gap-1">
+                    <a href="{% url 'complaint_detail' c.complaint_id %}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="View Details">
+                      <i class="bi bi-eye"></i> View
+                    </a>
+                    {% if c.user == request.user or is_admin %}
+                      <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" data-bs-toggle="modal" data-bs-target="#deleteListModal{{ c.id }}" title="Delete Complaint">
+                        <i class="bi bi-trash"></i>
+                      </button>
+
+                      <!-- Delete Modal for this complaint -->
+                      <div class="modal fade text-start" id="deleteListModal{{ c.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <form method="POST" action="{% url 'complaint_delete' c.complaint_id %}">
+                              {% csrf_token %}
+                              <div class="modal-header">
+                                <h5 class="modal-title fw-bold text-danger">
+                                  <i class="bi bi-trash me-2"></i>Delete Complaint
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                <p>Are you sure you want to permanently delete complaint <strong>{{ c.complaint_id }}</strong> ({{ c.title }})?</p>
+                                <div class="alert alert-danger small mb-0">
+                                  This action cannot be undone. All activity records will be deleted.
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-danger btn-sm px-3">
+                                  <i class="bi bi-trash me-1"></i> Confirm Delete
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="p-3">
+        {% include 'includes/pagination.html' %}
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <div class="display-6 text-muted mb-3"><i class="bi bi-search"></i></div>
+        <h5 class="fw-semibold">No Complaints Found</h5>
+        <p class="text-muted small mb-3">No tickets match the search query or selected filters.</p>
+        <a href="{% url 'complaint_list' %}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

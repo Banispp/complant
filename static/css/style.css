@@ -1,0 +1,361 @@
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-subtle: #eff6ff;
+  --dark-sidebar: #0f172a;
+  --sidebar-active: #1e293b;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --bg-main: #f8fafc;
+  --card-border: #e2e8f0;
+  --badge-submitted: #0284c7;
+  --badge-review: #d97706;
+  --badge-progress: #8b5cf6;
+  --badge-resolved: #16a34a;
+  --badge-closed: #475569;
+  --badge-rejected: #dc2626;
+  --badge-reopened: #ea580c;
+}
+
+.text-purple {
+  color: #7c3aed !important;
+}
+
+.bg-purple-subtle {
+  background-color: #ede9fe !important;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Layout */
+.app-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  width: 260px;
+  background-color: var(--dark-sidebar);
+  color: #94a3b8;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.app-sidebar .brand {
+  padding: 1.25rem 1.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.app-sidebar .brand i {
+  color: #38bdf8;
+  font-size: 1.35rem;
+}
+
+.app-sidebar .nav-group-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem 1.5rem 0.5rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.app-sidebar .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1.5rem;
+  color: #cbd5e1;
+  font-size: 0.925rem;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+  border-left: 3px solid transparent;
+}
+
+.app-sidebar .nav-link i {
+  font-size: 1.15rem;
+  width: 1.25rem;
+  text-align: center;
+}
+
+.app-sidebar .nav-link:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.app-sidebar .nav-link.active {
+  color: #ffffff;
+  background-color: var(--sidebar-active);
+  border-left-color: #38bdf8;
+}
+
+.app-sidebar .user-info {
+  margin-top: auto;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #1e293b;
+  background-color: #0c1322;
+}
+
+.app-main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: var(--bg-main);
+}
+
+.app-topbar {
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--card-border);
+  padding: 0 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 990;
+}
+
+.app-content {
+  padding: 2rem 1.75rem;
+  flex-grow: 1;
+}
+
+.app-footer {
+  padding: 1rem 1.75rem;
+  border-top: 1px solid var(--card-border);
+  background-color: #ffffff;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Cards & UI */
+.card {
+  border: 1px solid var(--card-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  background-color: #ffffff;
+}
+
+.card-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--card-border);
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+}
+
+.stat-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+}
+
+.stat-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+/* Status Badges */
+.badge-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35em 0.7em;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-submitted {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.badge-under_review {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.badge-in_progress {
+  background-color: #ede9fe;
+  color: #6d28d9;
+}
+
+.badge-resolved {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.badge-closed {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.badge-rejected {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.badge-reopened {
+  background-color: #ffedd5;
+  color: #c2410c;
+}
+
+/* Priority Badges */
+.badge-prio-low {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.badge-prio-medium {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+.badge-prio-high {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.badge-prio-urgent {
+  background-color: #fee2e2;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* Activity Timeline */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+  margin-left: 0.5rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 7px;
+  width: 2px;
+  background-color: #e2e8f0;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.75rem;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2rem;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 3px solid var(--primary);
+}
+
+.timeline-marker.status-marker {
+  border-color: #8b5cf6;
+}
+
+.timeline-marker.response-marker {
+  border-color: #0ea5e9;
+}
+
+.timeline-content {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+
+/* Custom Table Styles */
+.table th {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background-color: #f8fafc;
+  border-top: none;
+  padding: 0.85rem 1rem;
+}
+
+.table td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+}
+
+/* Auth Pages */
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9;
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  background: #ffffff;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 991.98px) {
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -260px;
+  }
+  .app-sidebar.show {
+    left: 0;
+  }
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 995;
+  }
+  .sidebar-backdrop.show {
+    display: block;
+  }
+}

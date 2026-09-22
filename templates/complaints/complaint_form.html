@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Complaint - Complaint Management System{% endblock %}
+{% block page_title %}Submit New Complaint{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Register a Service Request / Complaint</h5>
+      </div>
+      <div class="card-body p-4">
+        {% if show_duplicate_warning %}
+          <div class="alert alert-warning border-warning shadow-sm mb-4">
+            <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-2">
+              <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+              Similar Complaint Recently Submitted
+            </h6>
+            <p class="small mb-2">
+              You submitted a complaint with a matching title and category recently (<strong>{{ duplicate_complaint.complaint_id }}: {{ duplicate_complaint.title }}</strong>).
+            </p>
+            <p class="small mb-0 text-muted">
+              If this is a completely distinct problem or location, click <strong>"Submit Anyway"</strong> below to proceed.
+            </p>
+          </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'complaint_create' %}">
+          {% csrf_token %}
+
+          {% if show_duplicate_warning %}
+            <input type="hidden" name="confirm_duplicate" value="true">
+          {% endif %}
+
+          <div class="mb-3">
+            <label for="id_category" class="form-label fw-semibold small text-secondary">
+              Category <span class="text-danger">*</span>
+            </label>
+            {% if form.category.field.queryset.count == 0 %}
+              <div class="alert alert-warning small p-2 mb-0">No active categories available. Please contact support.</div>
+            {% else %}
+              {{ form.category }}
+            {% endif %}
+            {% if form.category.errors %}
+              <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+            {% endif %}
+            <div class="form-text small">Select the department/system regarding this issue.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="id_title" class="form-label fw-semibold small text-secondary">
+              Complaint Title <span class="text-danger">*</span>
+            </label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+            {% endif %}
+            <div class="form-text small">Provide a concise headline (e.g., 'WiFi disconnected in Hall B').</div>
+          </div>
+
+          <div class="mb-4">
+            <label for="id_description" class="form-label fw-semibold small text-secondary">
+              Detailed Description <span class="text-danger">*</span>
+            </label>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+            {% endif %}
+            <div class="form-text small">Include specific location details, equipment labels, and steps to reproduce.</div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{% url 'complaint_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary px-4 fw-semibold">
+              {% if show_duplicate_warning %}
+                <i class="bi bi-check2-circle me-1"></i> Submit Anyway
+              {% else %}
+                <i class="bi bi-send me-1"></i> Submit Complaint
+              {% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

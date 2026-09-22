@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}User Profile - {{ target_user.username }}{% endblock %}
+{% block page_title %}User Profile: {{ target_user.username }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">{{ target_user.get_full_name|default:target_user.username }}</h3>
+    <p class="text-muted mb-0">Detailed view of user profile and submitted ticket history.</p>
+  </div>
+  <div>
+    <a href="{% url 'user_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Back to Users
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-semibold text-secondary">Account Information</h6>
+      </div>
+      <div class="card-body">
+        <div class="text-center mb-4">
+          <div class="rounded-circle bg-primary-subtle text-primary fw-bold fs-3 d-inline-flex align-items-center justify-content-center mb-2" style="width: 72px; height: 72px;">
+            {{ target_user.first_name|default:target_user.username|slice:":1"|upper }}
+          </div>
+          <h5 class="fw-bold mb-0">{{ target_user.get_full_name|default:target_user.username }}</h5>
+          <div class="text-muted small">@{{ target_user.username }}</div>
+        </div>
+
+        <ul class="list-group list-group-flush small">
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Role:</span>
+            <span>
+              <span class="badge {{ target_user.profile.get_role_badge_class }}">
+                {{ target_user.profile.get_role_display|default:"Student" }}
+              </span>
+            </span>
+          </li>
+          {% if target_user.profile.academic_class %}
+            <li class="list-group-item d-flex justify-content-between px-0">
+              <span class="text-muted">Academic Class:</span>
+              <span class="fw-semibold text-primary">{{ target_user.profile.academic_class.name }}</span>
+            </li>
+          {% endif %}
+          {% if target_user.mentored_classes.all %}
+            <li class="list-group-item d-flex justify-content-between px-0">
+              <span class="text-muted">Mentored Class:</span>
+              <span class="fw-semibold text-info-emphasis">
+                {% for mc in target_user.mentored_classes.all %}{{ mc.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              </span>
+            </li>
+          {% endif %}
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Status:</span>
+            <span>
+              {% if target_user.is_active %}
+                <span class="badge bg-success-subtle text-success">Active</span>
+              {% else %}
+                <span class="badge bg-danger-subtle text-danger">Inactive</span>
+              {% endif %}
+            </span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Department:</span>
+            <span>{{ target_user.profile.department|default:"—" }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Phone:</span>
+            <span>{{ target_user.profile.phone|default:"—" }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Date Joined:</span>
+            <span>{{ target_user.date_joined|date:"d M Y, H:i" }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold">Complaints Filed ({{ user_complaints.count }})</h6>
+      </div>
+      <div class="card-body p-0">
+        {% if user_complaints %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Tier</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in user_complaints %}
+                  <tr>
+                    <td><a href="{% url 'complaint_detail' c.complaint_id %}" class="fw-bold text-decoration-none">{{ c.complaint_id }}</a></td>
+                    <td class="text-truncate" style="max-width: 200px;">{{ c.title }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ c.category.name }}</span></td>
+                    <td><span class="badge bg-dark text-warning">{{ c.get_current_level_display }}</span></td>
+                    <td><span class="badge badge-status badge-{{ c.status|lower }}">{{ c.get_status_display }}</span></td>
+                    <td class="small text-muted">{{ c.created_at|date:"d M Y" }}</td>
+                    <td class="text-end">
+                      <a href="{% url 'complaint_detail' c.complaint_id %}" class="btn btn-sm btn-outline-secondary py-0 px-2">View</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center py-4 text-muted small">This user has not submitted any complaints yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

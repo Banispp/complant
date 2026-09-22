@@ -1,0 +1,579 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ complaint.complaint_id }} - {{ complaint.title }}{% endblock %}
+{% block page_title %}Ticket {{ complaint.complaint_id }}{% endblock %}
+
+{% block content %}
+<!-- Header Bar -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 pb-2 border-bottom">
+  <div>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+      <span class="badge bg-secondary fs-6">{{ complaint.complaint_id }}</span>
+      <span class="badge badge-status badge-{{ complaint.status|lower }} fs-6">{{ complaint.get_status_display }}</span>
+      <span class="badge bg-dark text-white fs-6"><i class="bi bi-layers-fill me-1 text-warning"></i>{{ complaint.get_current_level_display }}</span>
+    </div>
+    <h3 class="fw-bold mb-0 text-dark">{{ complaint.title }}</h3>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'complaint_list' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+      <i class="bi bi-arrow-left"></i> Back to List
+    </a>
+
+    <!-- Role-based Workflow Buttons -->
+    {% if show_mentor_actions %}
+      <form method="POST" action="{% url 'complaint_status_update' complaint.complaint_id %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="new_status" value="RESOLVED">
+        <button type="submit" class="btn btn-success btn-sm d-flex align-items-center gap-1 fw-semibold text-white shadow-sm">
+          <i class="bi bi-check-circle"></i> Solve Issue
+        </button>
+      </form>
+      <button type="button" class="btn btn-warning btn-sm d-flex align-items-center gap-1 fw-semibold text-dark shadow-sm" data-bs-toggle="modal" data-bs-target="#escalateModal">
+        <i class="bi bi-arrow-up-right-circle"></i> Send to HOD
+      </button>
+
+    {% elif show_hod_actions %}
+      <form method="POST" action="{% url 'complaint_status_update' complaint.complaint_id %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="new_status" value="RESOLVED">
+        <button type="submit" class="btn btn-success btn-sm d-flex align-items-center gap-1 fw-semibold text-white shadow-sm">
+          <i class="bi bi-check-circle"></i> Solve Issue
+        </button>
+      </form>
+      <button type="button" class="btn btn-danger btn-sm d-flex align-items-center gap-1 fw-semibold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#escalateModal">
+        <i class="bi bi-arrow-up-right-circle"></i> Send to Principal
+      </button>
+
+    {% elif show_principal_actions %}
+      <form method="POST" action="{% url 'complaint_status_update' complaint.complaint_id %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="new_status" value="RESOLVED">
+        <button type="submit" class="btn btn-success btn-sm d-flex align-items-center gap-1 fw-semibold text-white shadow-sm">
+          <i class="bi bi-check-circle"></i> Solve Issue
+        </button>
+      </form>
+      <form method="POST" action="{% url 'complaint_status_update' complaint.complaint_id %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="new_status" value="CLOSED">
+        <button type="submit" class="btn btn-dark btn-sm d-flex align-items-center gap-1 fw-semibold text-white shadow-sm">
+          <i class="bi bi-x-circle"></i> Close Issue
+        </button>
+      </form>
+    {% endif %}
+
+    <!-- Old Escalation Buttons (for admin overrides or backward compatibility if needed) -->
+    {% if not show_mentor_actions and not show_hod_actions and not show_principal_actions %}
+      {% if can_escalate_to_hod %}
+        <button type="button" class="btn btn-warning btn-sm d-flex align-items-center gap-1 fw-semibold text-dark shadow-sm" data-bs-toggle="modal" data-bs-target="#escalateModal">
+          <i class="bi bi-arrow-up-right-circle"></i> Escalate to HOD
+        </button>
+      {% elif can_escalate_to_principal %}
+        <button type="button" class="btn btn-danger btn-sm d-flex align-items-center gap-1 fw-semibold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#escalateModal">
+          <i class="bi bi-arrow-up-right-circle"></i> Escalate to Principal
+        </button>
+      {% endif %}
+    {% endif %}
+
+    {% if is_admin %}
+      <!-- Admin / Authority Action Buttons -->
+      {% if allowed_transitions and not show_mentor_actions and not show_hod_actions and not show_principal_actions %}
+        <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#statusModal">
+          <i class="bi bi-arrow-repeat"></i> Change Status
+        </button>
+      {% endif %}
+
+      {% if complaint.status == 'RESOLVED' or complaint.status == 'CLOSED' %}
+        <button type="button" class="btn btn-warning btn-sm d-flex align-items-center gap-1 text-dark fw-semibold" data-bs-toggle="modal" data-bs-target="#reopenModal">
+          <i class="bi bi-arrow-counterclockwise"></i> Reopen
+        </button>
+      {% endif %}
+
+      <button type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#assignModal">
+        <i class="bi bi-person-check"></i> Assign Staff
+      </button>
+    {% else %}
+      <!-- User Action: Reopen if Resolved or Closed -->
+      {% if complaint.status == 'RESOLVED' or complaint.status == 'CLOSED' %}
+        <button type="button" class="btn btn-warning btn-sm d-flex align-items-center gap-1 text-dark fw-semibold" data-bs-toggle="modal" data-bs-target="#reopenModal">
+          <i class="bi bi-arrow-counterclockwise"></i> Reopen Complaint
+        </button>
+      {% endif %}
+    {% endif %}
+
+    {% if complaint.user == request.user or is_admin %}
+      <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#deleteComplaintModal" title="Delete Complaint">
+        <i class="bi bi-trash"></i> Delete
+      </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 4-TIER HIERARCHY STEPPER BAR (STUDENT -> CLASS MENTOR -> HOD -> PRINCIPAL) -->
+<div class="card shadow-sm mb-4 border-primary-subtle">
+  <div class="card-body p-3">
+    <div class="d-flex flex-column flex-lg-row align-items-center justify-content-between gap-3 text-center">
+      
+      <!-- Stage 1: Student Submission -->
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.85rem;">
+          <i class="bi bi-check-lg"></i>
+        </div>
+        <div class="text-start">
+          <div class="fw-bold small text-dark">1. Student Submitted</div>
+          <div class="text-muted" style="font-size: 0.72rem;">{{ complaint.created_at|date:"d M Y, H:i" }}</div>
+        </div>
+      </div>
+
+      <div class="d-none d-lg-block flex-grow-1 border-top border-2 {% if complaint.current_level in 'HOD,PRINCIPAL' or complaint.status in 'RESOLVED,CLOSED' %}border-success{% else %}border-secondary-subtle{% endif %}"></div>
+
+      <!-- Stage 2: Class Mentor Review -->
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle {% if complaint.current_level == 'MENTOR' and complaint.status not in 'RESOLVED,CLOSED' %}bg-primary text-white ring-2{% elif complaint.current_level in 'HOD,PRINCIPAL' or complaint.status in 'RESOLVED,CLOSED' %}bg-success text-white{% else %}bg-light text-secondary border{% endif %} d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.85rem;">
+          {% if complaint.current_level in 'HOD,PRINCIPAL' or complaint.status in 'RESOLVED,CLOSED' %}
+            <i class="bi bi-check-lg"></i>
+          {% else %}
+            2
+          {% endif %}
+        </div>
+        <div class="text-start">
+          <div class="fw-bold small {% if complaint.current_level == 'MENTOR' and complaint.status not in 'RESOLVED,CLOSED' %}text-primary{% else %}text-dark{% endif %}">2. Class Mentor Review</div>
+          <div class="text-muted" style="font-size: 0.72rem;">
+            {% if complaint.current_level == 'MENTOR' and complaint.status not in 'RESOLVED,CLOSED' %}
+              <span class="badge bg-primary-subtle text-primary">Active Tier</span>
+            {% elif complaint.status == 'RESOLVED' and complaint.current_level == 'MENTOR' %}
+              <span class="badge bg-success-subtle text-success">Resolved by Mentor</span>
+            {% else %}
+              Passed to HOD
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="d-none d-lg-block flex-grow-1 border-top border-2 {% if complaint.current_level == 'PRINCIPAL' or complaint.status in 'RESOLVED,CLOSED' and complaint.current_level in 'HOD,PRINCIPAL' %}border-success{% elif complaint.current_level == 'HOD' %}border-warning{% else %}border-secondary-subtle{% endif %}"></div>
+
+      <!-- Stage 3: HOD Review & Action -->
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle {% if complaint.current_level == 'HOD' and complaint.status not in 'RESOLVED,CLOSED' %}bg-warning text-dark fw-bold{% elif complaint.current_level == 'PRINCIPAL' or complaint.status in 'RESOLVED,CLOSED' and complaint.current_level in 'HOD,PRINCIPAL' %}bg-success text-white{% else %}bg-light text-secondary border{% endif %} d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.85rem;">
+          {% if complaint.current_level == 'PRINCIPAL' or complaint.status in 'RESOLVED,CLOSED' and complaint.current_level == 'HOD' %}
+            <i class="bi bi-check-lg"></i>
+          {% else %}
+            3
+          {% endif %}
+        </div>
+        <div class="text-start">
+          <div class="fw-bold small {% if complaint.current_level == 'HOD' and complaint.status not in 'RESOLVED,CLOSED' %}text-warning-emphasis{% elif complaint.status in 'RESOLVED,CLOSED' and complaint.current_level == 'HOD' %}text-success{% else %}text-dark{% endif %}">3. HOD Review</div>
+          <div class="text-muted" style="font-size: 0.72rem;">
+            {% if complaint.status in 'RESOLVED,CLOSED' and complaint.current_level == 'HOD' %}
+              <span class="badge bg-success-subtle text-success">Resolved by HOD</span>
+            {% elif complaint.current_level == 'HOD' %}
+              <span class="badge bg-warning-subtle text-warning-emphasis">Active Tier (HOD)</span>
+            {% elif complaint.current_level == 'PRINCIPAL' %}
+              Passed to Principal
+            {% else %}
+              If Escalated by Mentor
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="d-none d-lg-block flex-grow-1 border-top border-2 {% if complaint.status in 'RESOLVED,CLOSED' and complaint.current_level == 'PRINCIPAL' %}border-success{% elif complaint.current_level == 'PRINCIPAL' %}border-danger{% else %}border-secondary-subtle{% endif %}"></div>
+
+      <!-- Stage 4: Principal Final Resolution -->
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle {% if complaint.current_level == 'PRINCIPAL' and complaint.status not in 'RESOLVED,CLOSED' %}bg-danger text-white fw-bold{% elif complaint.status in 'RESOLVED,CLOSED' and complaint.current_level == 'PRINCIPAL' %}bg-success text-white{% else %}bg-light text-secondary border{% endif %} d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.85rem;">
+          {% if complaint.status in 'RESOLVED,CLOSED' and complaint.current_level == 'PRINCIPAL' %}
+            <i class="bi bi-check-lg"></i>
+          {% else %}
+            4
+          {% endif %}
+        </div>
+        <div class="text-start">
+          <div class="fw-bold small {% if complaint.current_level == 'PRINCIPAL' and complaint.status not in 'RESOLVED,CLOSED' %}text-danger{% elif complaint.status in 'RESOLVED,CLOSED' and complaint.current_level == 'PRINCIPAL' %}text-success{% else %}text-dark{% endif %}">4. Principal Resolution</div>
+          <div class="text-muted" style="font-size: 0.72rem;">
+            {% if complaint.status in 'RESOLVED,CLOSED' and complaint.current_level == 'PRINCIPAL' %}
+              <span class="badge bg-success-subtle text-success">Resolved by Principal</span>
+            {% elif complaint.current_level == 'PRINCIPAL' %}
+              <span class="badge bg-danger-subtle text-danger">Active Tier (Principal)</span>
+            {% else %}
+              If Escalated by HOD
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left Column: Details & Conversation -->
+  <div class="col-12 col-lg-8">
+    <!-- Complaint Description Card -->
+    <div class="card mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold text-secondary">Description &amp; Problem Statement</span>
+        <span class="text-muted small">Submitted {{ complaint.created_at|date:"d M Y, H:i" }}</span>
+      </div>
+      <div class="card-body">
+        <p class="card-text text-dark" style="white-space: pre-line; line-height: 1.6;">{{ complaint.description }}</p>
+      </div>
+    </div>
+
+    <!-- Timeline & Activity Section -->
+    <div class="card mb-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 fw-semibold"><i class="bi bi-clock-history me-2 text-primary"></i>Audit Trail &amp; Responses</h5>
+      </div>
+      <div class="card-body p-4">
+        {% if timeline %}
+          <div class="timeline">
+            {% for event in timeline %}
+              <div class="timeline-item">
+                <div class="timeline-marker {% if event.type == 'status_change' %}status-marker{% else %}response-marker{% endif %}"></div>
+                <div class="timeline-content">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="fw-semibold text-dark">
+                      {% if event.type == 'status_change' %}
+                        {% if 'ESCALATION' in event.comment %}
+                          <i class="bi bi-arrow-up-right-square-fill text-danger me-1"></i>
+                        {% else %}
+                          <i class="bi bi-arrow-right-circle text-purple me-1"></i>
+                        {% endif %}
+                        {{ event.title }}
+                      {% else %}
+                        <i class="bi bi-chat-left-dots text-primary me-1"></i>
+                        {{ event.title }}
+                      {% endif %}
+                    </div>
+                    <span class="text-muted small" style="font-size: 0.8rem;">
+                      {{ event.timestamp|date:"d M Y, H:i" }}
+                    </span>
+                  </div>
+
+                  <div class="small text-muted mb-2">
+                    By <strong>{% if event.actor %}{{ event.actor.get_full_name|default:event.actor.username }}{% else %}System{% endif %}</strong>
+                    {% if event.actor and event.actor.profile %}
+                      <span class="badge {{ event.actor.profile.get_role_badge_class }}" style="font-size: 0.65rem;">
+                        {{ event.actor.profile.get_role_display|upper }}
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  {% if event.type == 'status_change' %}
+                    {% if event.comment %}
+                      <p class="mb-0 {% if 'ESCALATION' in event.comment %}text-danger-emphasis bg-warning-subtle border-warning fw-medium{% else %}text-secondary bg-white border{% endif %} small p-2 rounded" style="white-space: pre-line;">{{ event.comment }}</p>
+                    {% endif %}
+                  {% else %}
+                    <p class="mb-0 text-dark bg-white p-2 rounded border" style="white-space: pre-line;">{{ event.message }}</p>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small text-center my-3">No activity recorded yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Post Response Form -->
+    {% if complaint.status != 'REJECTED' and complaint.status != 'CLOSED' or is_admin %}
+      <div class="card">
+        <div class="card-header bg-white">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-reply me-1 text-primary"></i>Add Response / Additional Information</h6>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{% url 'complaint_response' complaint.complaint_id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              {{ response_form.message }}
+            </div>
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary btn-sm px-4">
+                <i class="bi bi-send me-1"></i> Post Response
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Meta Information Card -->
+  <div class="col-12 col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-semibold text-secondary">Ticket Metadata</h6>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush small">
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Complaint ID:</span>
+            <span class="fw-bold">{{ complaint.complaint_id }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Escalation Tier:</span>
+            <span class="badge bg-dark text-warning fw-bold">{{ complaint.get_current_level_display }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Status:</span>
+            <span class="badge badge-status badge-{{ complaint.status|lower }}">{{ complaint.get_status_display }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Category:</span>
+            <span class="fw-medium">{{ complaint.category.name }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Submitted By:</span>
+            <span class="fw-medium">{{ complaint.user.get_full_name|default:complaint.user.username }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Academic Class:</span>
+            <span class="fw-bold text-primary">
+              {% if complaint.user.profile.academic_class %}
+                {{ complaint.user.profile.academic_class.name }}
+              {% else %}
+                <span class="text-muted fst-italic">Standard User</span>
+              {% endif %}
+            </span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Class Mentor:</span>
+            <span class="fw-medium">
+              {% if complaint.user.profile.academic_class.mentor %}
+                <i class="bi bi-person-check text-info me-1"></i>
+                {{ complaint.user.profile.academic_class.mentor.get_full_name|default:complaint.user.profile.academic_class.mentor.username }}
+              {% else %}
+                <span class="text-muted fst-italic">None Assigned</span>
+              {% endif %}
+            </span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Assigned Resolver:</span>
+            <span class="fw-medium">
+              {% if complaint.assigned_to %}
+                <i class="bi bi-person-badge text-primary me-1"></i>
+                {{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.username }}
+                {% if complaint.assigned_to.profile %}
+                  <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.65rem;">{{ complaint.assigned_to.profile.get_role_display }}</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted fst-italic">Unassigned</span>
+              {% endif %}
+            </span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Created Date:</span>
+            <span>{{ complaint.created_at|date:"d M Y, H:i" }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <span class="text-muted">Last Updated:</span>
+            <span>{{ complaint.updated_at|date:"d M Y, H:i" }}</span>
+          </li>
+          {% if complaint.resolved_at %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-light">
+              <span class="text-success fw-medium">Resolved Date:</span>
+              <span class="text-success fw-semibold">{{ complaint.resolved_at|date:"d M Y, H:i" }}</span>
+            </li>
+          {% endif %}
+          {% if complaint.closed_at %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-light">
+              <span class="text-muted fw-medium">Closed Date:</span>
+              <span class="text-muted fw-semibold">{{ complaint.closed_at|date:"d M Y, H:i" }}</span>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Escalation Modal (Mentor -> HOD or HOD -> Principal) -->
+{% if can_escalate_to_hod or can_escalate_to_principal %}
+  <div class="modal fade" id="escalateModal" tabindex="-1" aria-labelledby="escalateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{% url 'complaint_escalate' complaint.complaint_id %}">
+          {% csrf_token %}
+          <div class="modal-header {% if can_escalate_to_hod %}bg-warning-subtle{% else %}bg-danger-subtle{% endif %}">
+            <h5 class="modal-title fw-bold text-dark" id="escalateModalLabel">
+              {% if can_escalate_to_hod %}
+                <i class="bi bi-arrow-up-right-circle-fill text-warning me-2"></i>
+                Escalate to Head of Department (HOD)
+              {% else %}
+                <i class="bi bi-shield-fill-exclamation text-danger me-2"></i>
+                Escalate to College Principal
+              {% endif %}
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info small mb-3">
+              <i class="bi bi-info-circle me-1"></i>
+              {% if can_escalate_to_hod %}
+                If this issue cannot be resolved at the <strong>Class Mentor Level</strong>, submit the escalation below. The issue will be escalated to the <strong>Head of Department (HOD)</strong>.
+              {% else %}
+                If this issue cannot be resolved at the <strong>HOD Level</strong>, submit the final escalation below. The issue will be escalated to the <strong>College Principal</strong> for final institutional resolution.
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label for="id_escalation_reason" class="form-label small fw-semibold text-secondary">
+                Reason for Escalation <span class="text-danger">*</span>
+              </label>
+              {{ escalate_form.escalation_reason }}
+              <div class="form-text small">
+                {% if can_escalate_to_hod %}
+                  Provide detailed rationale on why this requires HOD intervention.
+                {% else %}
+                  Provide detailed rationale on why this requires Principal intervention.
+                {% endif %}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="id_assigned_to" class="form-label small fw-semibold text-secondary">
+                Direct Assignee (Optional)
+              </label>
+              {{ escalate_form.assigned_to }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn {% if can_escalate_to_hod %}btn-warning text-dark{% else %}btn-danger text-white{% endif %} btn-sm px-3 fw-bold">
+              <i class="bi bi-send-check me-1"></i>
+              {% if can_escalate_to_hod %}Confirm Escalation to HOD{% else %}Confirm Escalation to Principal{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if is_admin %}
+  <!-- Status Update Modal -->
+  <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{% url 'complaint_status_update' complaint.complaint_id %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="statusModalLabel">Update Complaint Status</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">Current Status</label>
+              <input type="text" class="form-control" value="{{ complaint.get_status_display }}" disabled>
+            </div>
+            <div class="mb-3">
+              <label for="id_new_status" class="form-label small fw-semibold text-secondary">New Status <span class="text-danger">*</span></label>
+              {{ status_form.new_status }}
+            </div>
+            <div class="mb-3">
+              <label for="id_comment" class="form-label small fw-semibold text-secondary">Status Change Note / Audit Comment</label>
+              {{ status_form.comment }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm px-3">Confirm Status Change</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Staff Modal -->
+  <div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{% url 'complaint_assign' complaint.complaint_id %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="assignModalLabel">Assign Complaint</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="id_assigned_to" class="form-label small fw-semibold text-secondary">Select Support Staff / Faculty / HOD / Principal</label>
+              {{ assign_form.assigned_to }}
+              <div class="form-text small">Assign to an active staff member responsible for resolving this issue.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm px-3">Save Assignment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if reopen_form %}
+  <!-- Reopen Complaint Modal -->
+  <div class="modal fade" id="reopenModal" tabindex="-1" aria-labelledby="reopenModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{% url 'complaint_reopen' complaint.complaint_id %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-dark" id="reopenModalLabel">
+              <i class="bi bi-arrow-counterclockwise text-warning me-1"></i> Reopen Complaint
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-3">
+              If the problem has recurred or was not satisfactorily resolved, provide details below.
+            </p>
+            <div class="mb-3">
+              <label for="id_comment" class="form-label small fw-semibold text-secondary">Reason for Reopening <span class="text-danger">*</span></label>
+              {{ reopen_form.comment }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning btn-sm px-3 text-dark fw-semibold">Confirm Reopen</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if complaint.user == request.user or is_admin %}
+  <!-- Delete Complaint Modal -->
+  <div class="modal fade" id="deleteComplaintModal" tabindex="-1" aria-labelledby="deleteComplaintModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{% url 'complaint_delete' complaint.complaint_id %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-danger" id="deleteComplaintModalLabel">
+              <i class="bi bi-trash me-2"></i>Delete Complaint
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to permanently delete complaint <strong>{{ complaint.complaint_id }}</strong> ({{ complaint.title }})?</p>
+            <div class="alert alert-danger small mb-0">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i> This action cannot be undone. All activity logs and responses will be permanently removed.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger btn-sm px-3">
+              <i class="bi bi-trash me-1"></i> Confirm Delete
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

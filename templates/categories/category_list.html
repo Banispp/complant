@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Complaint Categories - Admin{% endblock %}
+{% block page_title %}Category Management{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">Complaint Categories</h3>
+    <p class="text-muted mb-0">Organize and configure ticket classification departments.</p>
+  </div>
+  <div>
+    <a href="{% url 'category_create' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-plus-lg"></i>
+      <span>Add New Category</span>
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <span class="fw-semibold">All Categories ({{ categories.count }})</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Complaints Linked</th>
+            <th>Created Date</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in categories %}
+            <tr>
+              <td class="fw-bold text-dark">{{ cat.name }}</td>
+              <td class="text-muted small" style="max-width: 320px;">{{ cat.description|default:"—" }}</td>
+              <td>
+                {% if cat.is_active %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary border">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border">{{ cat.complaint_count }} complaints</span>
+              </td>
+              <td class="small text-muted">{{ cat.created_at|date:"d M Y" }}</td>
+              <td class="text-end">
+                <div class="d-flex justify-content-end gap-2">
+                  <a href="{% url 'category_edit' cat.pk %}" class="btn btn-sm btn-outline-secondary py-1 px-2">
+                    <i class="bi bi-pencil"></i> Edit
+                  </a>
+
+                  <button type="button" class="btn btn-sm {% if cat.is_active %}btn-outline-warning text-dark{% else %}btn-outline-success{% endif %} py-1 px-2" data-bs-toggle="modal" data-bs-target="#toggleCatModal{{ cat.pk }}">
+                    {% if cat.is_active %}<i class="bi bi-slash-circle"></i> Deactivate{% else %}<i class="bi bi-check-circle"></i> Activate{% endif %}
+                  </button>
+                </div>
+
+                <!-- Toggle Status Modal -->
+                <div class="modal fade text-start" id="toggleCatModal{{ cat.pk }}" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <form method="POST" action="{% url 'category_toggle_active' cat.pk %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                          <h5 class="modal-title fw-bold">
+                            {% if cat.is_active %}Deactivate Category{% else %}Activate Category{% endif %}
+                          </h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <p>
+                            Are you sure you want to {% if cat.is_active %}<strong>deactivate</strong>{% else %}<strong>activate</strong>{% endif %} the <strong>{{ cat.name }}</strong> category?
+                          </p>
+                          {% if cat.is_active %}
+                            <div class="alert alert-warning small mb-0">
+                              Inactive categories cannot be selected for new complaints, but existing records will safely preserve this category.
+                            </div>
+                          {% endif %}
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-sm {% if cat.is_active %}btn-warning text-dark{% else %}btn-success{% endif %} px-3">
+                            Confirm
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                <i class="bi bi-tags display-6 d-block mb-2"></i>
+                No categories found. Click "Add New Category" above to create one.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

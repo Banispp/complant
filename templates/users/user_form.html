@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Add User / Student - Admin{% endblock %}
+{% block page_title %}Create User Account{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-xl-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0"><i class="bi bi-person-plus me-2 text-primary"></i>Add User / Student</h5>
+        <a href="{% url 'user_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Back to Directory
+        </a>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label for="id_first_name" class="form-label small fw-semibold text-secondary">First Name <span class="text-danger">*</span></label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}
+                <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-sm-6">
+              <label for="id_last_name" class="form-label small fw-semibold text-secondary">Last Name <span class="text-danger">*</span></label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}
+                <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="id_username" class="form-label small fw-semibold text-secondary">Username <span class="text-danger">*</span></label>
+            {{ form.username }}
+            {% if form.username.errors %}
+              <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_email" class="form-label small fw-semibold text-secondary">Email <span class="text-danger">*</span></label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label for="id_role" class="form-label small fw-semibold text-secondary">Institutional Role <span class="text-danger">*</span></label>
+              {{ form.role }}
+              {% if form.role.errors %}
+                <div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-sm-6">
+              <label for="id_academic_class" class="form-label small fw-semibold text-secondary">Academic Class / Batch</label>
+              {{ form.academic_class }}
+              {% if form.academic_class.errors %}
+                <div class="text-danger small mt-1">{{ form.academic_class.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="form-text small mb-3">Assigning a class automatically connects student complaints to that class's Class Mentor.</div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-sm-6">
+              <label for="id_password" class="form-label small fw-semibold text-secondary">Initial Password <span class="text-danger">*</span></label>
+              {{ form.password }}
+              {% if form.password.errors %}
+                <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-sm-6">
+              <label for="id_confirm_password" class="form-label small fw-semibold text-secondary">Confirm Password <span class="text-danger">*</span></label>
+              {{ form.confirm_password }}
+              {% if form.confirm_password.errors %}
+                <div class="text-danger small mt-1">{{ form.confirm_password.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{% url 'user_list' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-x-circle me-1"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold">
+              <i class="bi bi-person-check-fill me-1"></i> Create User Account
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('id_role');
+    const classSelect = document.getElementById('id_academic_class');
+    
+    if (roleSelect && classSelect) {
+      const classContainer = classSelect.closest('.col-sm-6');
+      const rowElement = classContainer ? classContainer.closest('.row') : null;
+      const helpText = rowElement ? rowElement.nextElementSibling : null;
+      const isHelpText = helpText && helpText.classList.contains('form-text');
+
+      function toggleDepartmentField() {
+        if (roleSelect.value === 'PRINCIPAL') {
+          if (classContainer) classContainer.style.display = 'none';
+          if (isHelpText) helpText.style.display = 'none';
+          classSelect.value = ''; // Clear selection
+        } else {
+          if (classContainer) classContainer.style.display = 'block';
+          if (isHelpText) helpText.style.display = 'block';
+        }
+      }
+
+      roleSelect.addEventListener('change', toggleDepartmentField);
+      toggleDepartmentField();
+    }
+  });
+</script>
+{% endblock %}
